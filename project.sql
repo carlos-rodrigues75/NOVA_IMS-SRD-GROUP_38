@@ -594,3 +594,44 @@ join product p on oi.product_id = p.id
 where o.status != 'CANCELED'
 group by a.city
 order by `total sales` desc;
+
+#G Creating views
+
+CREATE VIEW invoice_head_totals AS
+SELECT
+    o.id AS order_id,
+    u.first_name AS customer_first_name,
+    u.last_name AS customer_last_name,
+    u.email AS customer_email,
+    CONCAT(a.street_address, ', ', a.city, ', ', a.state, ', ', a.postal_code) AS delivery_full_address,
+    r.name AS restaurant_name,
+    CONCAT(ad.street_address, ', ', ad.city, ', ', ad.state, ', ', ad.postal_code) AS restaurant_full_address,
+    o.order_date,
+    SUM(oi.quantity * p.price) AS total_amount
+FROM
+    delivery_order o
+JOIN customer c ON o.customer_id = c.id
+JOIN user u ON u.id = c.user_id 
+JOIN address a ON o.address_id = a.id
+JOIN restaurant r ON o.restaurant_id = r.id
+JOIN address ad ON r.address_id = ad.id
+JOIN order_item oi ON o.id = oi.order_id
+JOIN product p ON oi.product_id = p.id
+WHERE o.status != 'CANCELED'
+GROUP BY
+    1,2,3,4,5,6,7;
+   
+
+CREATE VIEW invoice_details AS
+SELECT
+    o.id AS order_id,
+    p.name AS product_name,
+    p.description AS product_description,
+    oi.quantity,
+    p.price AS unit_price,
+    oi.quantity * p.price AS total_price
+FROM
+    delivery_order o
+JOIN order_item oi ON o.id = oi.order_id
+JOIN product p ON oi.product_id = p.id
+WHERE o.status != 'CANCELED';
