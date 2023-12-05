@@ -409,7 +409,7 @@ VALUES
     (7, 5, 7, '2019-12-25', 'CANCELED'),
     (8, 6, 8, '2022-06-28', 'COMPLETED'),
     (9, 7, 9, '2019-03-12', 'CREATED'),
-    (10, 8, 10, '2019-01-06', 'COMPLETED'),
+    (10, 8, 10, '2019-01-01', 'COMPLETED'),
 
     -- Adding more orders in COMPLETED or CANCELED states
     (11, 9, 11, '2021-03-11', 'CANCELED'),
@@ -421,7 +421,7 @@ VALUES
     (17, 15, 17, '2023-10-25', 'COMPLETED'),
     (18, 16, 18, '2023-12-31', 'COMPLETED'),
     (19, 20, 19, '2021-04-01', 'CANCELED'),
-    (20, 1, 1, '1019-10-07', 'COMPLETED');
+    (20, 1, 1, '2019-10-07', 'COMPLETED');
 
 
 ###############
@@ -509,7 +509,7 @@ set status = 'COMPLETED'
 WHERE status = 'CREATED'
 limit 2;
 
-# Update 2 orders to COMPLETED to test trigger
+# Update 2 orders to CANCELED to test trigger
 UPDATE delivery_order
 set status = 'CANCELED'
 WHERE status = 'CREATED'
@@ -580,8 +580,17 @@ limit 3;
 
 # 3. Get the average amount of sales/bookings/rents/deliveries for a period that involves 2 or more
 # years, as in the following example. This query only returns one record:
-# this question is missing as I don't understand what is being asked
-TODO
+select
+	CONCAT(DATE_FORMAT(MIN(o.order_date), '%m/%Y') , ' - ' , DATE_FORMAT(MAX(o.order_date), '%m/%Y')) as Period_of_Sales,
+	SUM(p.price * oi.quantity) as "Total Sales (€)",
+    SUM(p.price * oi.quantity) / timestampdiff(YEAR, MIN(o.order_date), (MAX(o.order_date))) as "Yearly Average (of the given period)",
+    SUM(p.price * oi.quantity) / timestampdiff(Month, MIN(o.order_date), (MAX(o.order_date))) as "Monthly Average (of the given period)"
+FROM delivery_order o
+join order_item oi on o.id = oi.order_id
+join product p on oi.product_id = p.id
+where o.order_date >= '2019-01-01'
+AND o.order_date <= '2023-12-31'
+AND o.status != 'CANCELED';
 
 # 4. Get the total sales/bookings/rents/deliveries by geographical location (city/country)
 select a.city, sum(p.price * oi.quantity) as 'total sales'
@@ -594,6 +603,29 @@ join product p on oi.product_id = p.id
 where o.status != 'CANCELED'
 group by a.city
 order by `total sales` desc;
+
+# 5. List all the locations where products/services were sold, and the product has customer’s ratings
+# (Yes, your ERD must consider that customers can give ratings)
+
+# Cities in which ordered products were rated (with product and rating)
+select a.city, p.name, o.rating
+from address a
+join customer_address ca on a.id = ca.address_id
+join customer c on ca.customer_id = c.id
+join delivery_order o on c.id = o.customer_id
+join order_item oi on o.id = oi.order_id
+join product p on oi.product_id = p.id
+where o.status != 'CANCELED'
+AND o.rating IS NOT NULL ;
+
+# Cities in which ordered products were rated (just cities)
+select distinct a.city
+from address a
+join customer_address ca on a.id = ca.address_id
+join customer c on ca.customer_id = c.id
+join delivery_order o on c.id = o.customer_id
+where o.status != 'CANCELED'
+AND o.rating IS NOT NULL ;
 
 #G Creating views
 
