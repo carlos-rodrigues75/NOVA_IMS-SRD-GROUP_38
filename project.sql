@@ -90,7 +90,8 @@ CREATE TABLE IF NOT EXISTS order_item
     product_id int not null,
     quantity   int not null,
     foreign key (order_id) references delivery_order (id),
-    foreign key (product_id) references product (id)
+    foreign key (product_id) references product (id),
+    unique (order_id, product_id)
 );
 
 CREATE TABLE IF NOT EXISTS courier
@@ -98,7 +99,8 @@ CREATE TABLE IF NOT EXISTS courier
     id             int primary key auto_increment,
     user_id        int         not null,
     license_number varchar(20) not null,
-    foreign key (user_id) references user (id) ON DELETE CASCADE
+    foreign key (user_id) references user (id) ON DELETE CASCADE,
+    unique (license_number)
 );
 
 CREATE TABLE IF NOT EXISTS route
@@ -114,7 +116,8 @@ CREATE TABLE IF NOT EXISTS route_order
     route_id int not null,
     order_id int not null,
     foreign key (route_id) references route (id),
-    foreign key (order_id) references delivery_order (id)
+    foreign key (order_id) references delivery_order (id),
+    unique (route_id, order_id)
 );
 
 CREATE TABLE IF NOT EXISTS order_status_log
