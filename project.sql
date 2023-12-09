@@ -129,19 +129,35 @@ CREATE TABLE IF NOT EXISTS order_status_log
     foreign key (order_id) references delivery_order (id)
 );
 
-CREATE TRIGGER order_status_log_insert
+CREATE TRIGGER IF NOT EXISTS order_status_log_insert
     AFTER INSERT
     ON delivery_order
     FOR EACH ROW
     INSERT INTO order_status_log (order_id, status)
     VALUES (NEW.id, NEW.status);
 
-CREATE TRIGGER order_status_log_update
+CREATE TRIGGER IF NOT EXISTS order_status_log_update
     AFTER UPDATE
     ON delivery_order
     FOR EACH ROW
     INSERT INTO order_status_log (order_id, status)
     VALUES (NEW.id, NEW.status);
+
+# Create a trigger while trying to create an order item for product which restaurant is different of the order restaurant
+CREATE TRIGGER IF NOT EXISTS order_item_insert_trigger
+    BEFORE INSERT
+    ON order_item
+    FOR EACH ROW
+    BEGIN
+        DECLARE order_item_restaurant_id INT;
+        DECLARE order_restaurant INT;
+
+        SELECT restaurant_id INTO order_item_restaurant_id FROM product WHERE id = NEW.product_id;
+        SELECT restaurant_id INTO order_restaurant FROM delivery_order WHERE id = NEW.order_id;
+        IF order_item_restaurant_id != order_restaurant THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot add order item for product of different restaurant';
+        END IF;
+    END;
 
 ################
 ##### DATA #####
@@ -441,6 +457,17 @@ FROM delivery_order o
 ORDER BY RAND()
 LIMIT 50;
 
+INSERT INTO order_item (order_id, product_id, quantity)
+SELECT o.id       AS order_id,
+       p.id AS product_id, -- pick random products from the restaurant
+       1 + FLOOR(RAND() * (3)) AS quantity    -- Random number between 1 and 3
+FROM delivery_order o
+join order_item oi on o.id = oi.order_id
+join restaurant r on o.restaurant_id = r.id
+join (select p2.id, p2.restaurant_id from product p2 order by rand()) p on oi.product_id != p.id and p.restaurant_id = r.id
+ORDER BY RAND()
+LIMIT 10;
+
 -- Create random ratings for 8 orders with status COMPLETED
 -- We're rating only 8 orders because of the question #5 of the PDF
 UPDATE delivery_order
@@ -517,6 +544,15 @@ UPDATE delivery_order
 set status = 'CANCELED'
 WHERE status = 'CREATED'
 limit 2;
+
+# Try to create order item for product of different restaurant to test trigger.
+# This should fail because the trigger will throw an error.
+# INSERT INTO order_item (order_id, product_id, quantity)
+# SELECT o.id       AS order_id,
+#        (select p.id from product p where p.restaurant_id != o.restaurant_id limit 1) AS product_id, -- pick a single products from a different restaurant
+#        1
+# FROM delivery_order o
+# LIMIT 1;
 
 # Query for log table to check the behavior of the trigger
 SELECT * from order_status_log;
