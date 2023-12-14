@@ -1,3 +1,13 @@
+######################################################
+###             SRD Project Group 38               ###
+###         Team Members and Student Numbers:      ###
+### Eugénia de Fátima Carrêlo Do Rosário: 20220598 ###
+### Carlos Eduardo Rodrigues da Costa:    20230543 ###
+###         Ilyass Jannah:       20230598          ###     
+###         Anton Kutsenko:      20230765          ###
+###         Jannik Himmelsbach:  20230550          ###       
+######################################################
+
 CREATE DATABASE IF NOT EXISTS `food_delivery` DEFAULT CHARACTER SET = 'utf8' DEFAULT COLLATE 'utf8_general_ci';
 USE `food_delivery`;
 
